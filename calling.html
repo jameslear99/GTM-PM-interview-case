@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Call Queue · GTM Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F0F4F8;--bg2:#FFFFFF;--bg3:#F1F5F9;--bg4:#E2E8F0;--accent:#0BBFB3;--acc-d:rgba(11,191,179,0.10);--acc-b:rgba(11,191,179,0.30);--amber:#D97706;--amb-d:rgba(217,119,6,0.10);--coral:#E8664A;--cor-d:rgba(232,102,74,0.10);--green:#059669;--grn-d:rgba(5,150,105,0.10);--text:#0F172A;--text2:#475569;--text3:#94A3B8;--border:rgba(0,0,0,0.07);--nav-h:56px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+.topnav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:200}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.logo-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+.role-badge{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:var(--acc-d);color:var(--accent);padding:2px 7px;border-radius:99px;border:1px solid var(--acc-b)}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1}
+.nav-link{font-size:13px;font-weight:500;color:var(--text2);text-decoration:none;padding:5px 12px;border-radius:6px;transition:all 0.15s;white-space:nowrap}
+.nav-link:hover{color:var(--text);background:var(--bg3)}
+.nav-link.active{color:var(--accent);background:var(--acc-d)}
+.nav-right{margin-left:auto}
+.main{padding-top:var(--nav-h);height:100%;overflow:hidden}
+.role-toggle{position:fixed;bottom:20px;left:20px;z-index:300;display:flex;align-items:center;gap:8px;background:var(--text);color:rgba(255,255,255,0.8);font-size:12px;font-weight:600;font-family:inherit;padding:8px 16px;border-radius:99px;cursor:pointer;border:none;box-shadow:0 4px 20px rgba(0,0,0,0.18);transition:all 0.2s}
+.role-toggle:hover{color:#fff}
+.toggle-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+body.role-sdr .ae-only{display:none!important}
+body.role-ae  .sdr-only{display:none!important}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;font-family:inherit;padding:8px 18px;border-radius:8px;cursor:pointer;border:none;transition:all 0.15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0D1B2A}
+.btn-primary:hover{background:#0dd9cc}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-coral{background:var(--cor-d);color:var(--coral);border:1px solid rgba(232,102,74,0.25)}
+.btn-coral:hover{background:rgba(232,102,74,0.2)}
+.btn-sm{padding:5px 12px;font-size:11px;border-radius:6px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+
+/* ── SDR layout: single column, centered, max-width ── */
+.caller-main{height:100%;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:12px;max-width:780px;margin:0 auto}
+
+/* progress */
+.queue-progress{display:flex;align-items:center;gap:10px}
+.q-dots{display:flex;gap:5px}
+.q-dot{width:7px;height:7px;border-radius:50%;background:var(--bg4);border:1px solid var(--border)}
+.q-dot.done{background:var(--green)}
+.q-dot.current{background:var(--accent)}
+.q-nav{display:flex;gap:8px;margin-left:auto}
+
+/* contact hero */
+.contact-hero{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 22px}
+.ch-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.ch-avatar{width:46px;height:46px;border-radius:50%;background:var(--bg3);border:2px solid var(--acc-b);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--accent);flex-shrink:0}
+.ch-name{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:2px}
+.ch-meta{font-size:12px;color:var(--text3);margin-bottom:6px}
+.ch-tags{display:flex;flex-wrap:wrap;gap:4px}
+.ch-tag{font-size:10px;color:var(--text3);background:var(--bg3);padding:2px 7px;border-radius:99px;border:1px solid var(--border)}
+
+/* phone / in-call */
+.phone-block{background:var(--bg3);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border)}
+.phone-num{font-size:26px;font-weight:700;color:var(--text);letter-spacing:0.04em;font-variant-numeric:tabular-nums}
+.phone-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.call-active-bar{display:none;background:#0F172A;border-radius:10px;padding:14px 18px;align-items:center;justify-content:space-between;border:1px solid rgba(0,0,0,0.15)}
+.call-active-bar.on{display:flex}
+.call-pulse-dot{width:10px;height:10px;border-radius:50%;background:#34D399;flex-shrink:0;animation:cpulse 1.4s ease-in-out infinite}
+@keyframes cpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.4)}}
+.call-timer{font-size:26px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:0.05em;line-height:1}
+.call-in-label{font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px}
+
+/* temp */
+.temp-strip{display:none;border-radius:8px;padding:10px 14px;border:1px solid var(--border);flex-shrink:0}
+.temp-strip.on{display:block}
+.temp-strip-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.temp-strip-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3)}
+.temp-strip-value{font-size:11px;font-weight:700;transition:color 1s}
+.temp-bar-track{height:5px;border-radius:3px;background:var(--bg4);overflow:hidden}
+.temp-bar-fill{height:100%;border-radius:3px;transition:width 1.5s ease,background 1.5s ease}
+
+/* AI suggestion — inline large format */
+.ai-inline{display:none;border-radius:10px;overflow:hidden;border:1.5px solid var(--acc-b);flex-shrink:0}
+.ai-inline.on{display:flex;flex-direction:column}
+.ai-inline.ai-fade-out{animation:aiFade 0.18s ease forwards}
+.ai-inline.ai-fade-in{animation:aiIn 0.22s ease forwards}
+@keyframes aiFade{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-5px)}}
+@keyframes aiIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.ai-inline-header{background:#0F172A;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-inline-badge{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent)}
+.ai-dismiss-btn{font-size:20px;color:rgba(255,255,255,0.3);cursor:pointer;line-height:1;padding:0 2px;background:none;border:none;font-family:inherit}
+.ai-dismiss-btn:hover{color:rgba(255,255,255,0.8)}
+.ai-inline-body{background:rgba(11,191,179,0.06);padding:16px 20px}
+.ai-inline-text{font-size:16px;font-weight:500;color:var(--text);line-height:1.6}
+
+/* content panels */
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;flex-shrink:0}
+.info-title{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;gap:8px}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--text3);flex-shrink:0}
+.info-row .v{color:var(--text2);font-weight:500;text-align:right}
+.talking-point{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.45}
+.talking-point:last-child{border-bottom:none}
+.tp-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px}
+.bg-note{font-size:13px;color:var(--text2);line-height:1.65;padding:10px 12px;background:var(--bg3);border-radius:6px}
+.objection-item{padding:8px 0;border-bottom:1px solid var(--border)}
+.objection-item:last-child{border-bottom:none}
+.obj-q{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.obj-a{font-size:12px;color:var(--text3);line-height:1.45}
+
+/* AE */
+.demo-prep-layout{display:grid;grid-template-columns:1fr 360px;height:100%;overflow:hidden}
+.demo-prep-main{overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.demo-prep-sidebar{border-left:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.demo-hero{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+.dh-time{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.dh-account{font-size:24px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:4px}
+.dh-contact{font-size:13px;color:var(--text2);margin-bottom:14px}
+.dh-focus{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.dh-focus span{font-size:11px;color:var(--accent);background:var(--acc-d);padding:3px 10px;border-radius:99px;border:1px solid var(--acc-b)}
+.prep-note{background:var(--amb-d);border:1px solid rgba(217,119,6,0.25);border-radius:8px;padding:10px 14px}
+.prep-note-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#D97706;margin-bottom:4px}
+.prep-note-text{font-size:12px;color:var(--text2);line-height:1.5}
+.notes-area{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+.notes-area textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;line-height:1.6;padding:10px;resize:vertical;min-height:120px;outline:none}
+.notes-area textarea:focus{border-color:var(--acc-b)}
+
+/* bottom padding so last card isn't flush with viewport edge */
+.caller-main::after{content:'';display:block;height:40px;flex-shrink:0}
+
+/* ── post-call modal ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s ease}
+.modal-backdrop.open{opacity:1;pointer-events:auto}
+.modal-card{background:var(--bg2);border-radius:16px;width:100%;max-width:500px;box-shadow:0 24px 64px rgba(0,0,0,0.18);transform:scale(0.96) translateY(8px);transition:transform 0.25s cubic-bezier(.22,.68,0,1.2),opacity 0.2s ease;opacity:0;display:flex;flex-direction:column;gap:0;overflow:hidden}
+.modal-backdrop.open .modal-card{transform:scale(1) translateY(0);opacity:1}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.modal-close{background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;line-height:1;padding:0 2px;font-family:inherit}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;max-height:calc(90vh - 120px)}
+.modal-ai-box{background:var(--acc-d);border:1px solid var(--acc-b);border-radius:8px;padding:12px 14px}
+.modal-ai-label{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.modal-ai-text{font-size:12px;color:var(--text2);line-height:1.6}
+.modal-section-label{font-size:11px;font-weight:600;color:var(--text);margin-bottom:8px}
+.rating-row{display:flex;gap:6px}
+.rating-btn{width:44px;height:44px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:15px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;justify-content:center}
+.rating-btn:hover{border-color:var(--accent);color:var(--accent)}
+.rating-btn.selected{background:var(--accent);border-color:var(--accent);color:#0D1B2A}
+.modal-notes{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;line-height:1.6;padding:10px;resize:none;height:68px;outline:none}
+.modal-notes:focus{border-color:var(--acc-b)}
+.modal-followup-box{background:#0F172A;border-radius:10px;overflow:hidden}
+.modal-followup-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.modal-followup-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent)}
+.modal-followup-channel{font-size:10px;color:rgba(255,255,255,0.35)}
+.modal-followup-text{width:100%;background:transparent;border:none;color:rgba(255,255,255,0.8);font-family:'Inter',sans-serif;font-size:12px;line-height:1.65;padding:12px 14px;resize:none;height:110px;outline:none}
+.modal-followup-text::placeholder{color:rgba(255,255,255,0.2)}
+.modal-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);background:var(--bg3)}
+</style>
+</head>
+<body class="role-sdr">
+
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <span class="logo-dot"></span>
+    <span class="logo-name">GTM Engine</span>
+    <span class="role-badge" id="role-badge">SDR</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html">Home</a>
+    <a class="nav-link" href="inbox.html">Inbox</a>
+    <a class="nav-link ae-only" href="calendar.html">Calendar</a>
+    <a class="nav-link active" href="calling.html" id="queue-link">Call Queue</a>
+  </div>
+  <div class="nav-right">
+    <div style="width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2)">JL</div>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- ── SDR: CALL QUEUE (single column) ── -->
+  <div class="sdr-only" style="height:100%">
+    <div class="caller-main">
+
+      <div class="queue-progress">
+        <span style="font-size:12px;color:var(--text3)">Contact</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text)" id="sdr-pos">1 of 5</span>
+        <div class="q-dots" id="q-dots"></div>
+        <div class="q-nav">
+          <button class="btn btn-ghost btn-sm" id="btn-prev" onclick="prevContact()">← Prev</button>
+          <button class="btn btn-ghost btn-sm" id="btn-next" onclick="nextContact()">Next →</button>
+        </div>
+      </div>
+
+      <!-- Contact card -->
+      <div class="contact-hero">
+        <div class="ch-top">
+          <div class="ch-avatar" id="c-initials">MS</div>
+          <div>
+            <div class="ch-name" id="c-name">Maria Santos</div>
+            <div class="ch-meta" id="c-meta">Practice Manager · Rivera Dental Group · 3 locations</div>
+            <div class="ch-tags" id="c-tags"></div>
+          </div>
+        </div>
+
+        <div class="phone-block" id="pre-call-block">
+          <div>
+            <div class="phone-num" id="c-phone">(801) 555-0142</div>
+            <div class="phone-sub" id="c-last-contact">No prior contact</div>
+          </div>
+          <button class="btn btn-primary" onclick="startCall()">📞 Start call</button>
+        </div>
+
+        <div class="call-active-bar" id="call-active-bar">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="call-pulse-dot"></div>
+            <div>
+              <div class="call-timer" id="call-timer">0:00</div>
+              <div class="call-in-label">In progress</div>
+            </div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:4px">Lead temp</div>
+            <div id="temp-badge" style="font-size:13px;font-weight:700;padding:3px 14px;border-radius:99px;transition:all 1s">Warm</div>
+          </div>
+          <button class="btn btn-coral" onclick="endCall()">⊘ End call</button>
+        </div>
+      </div>
+
+      <!-- Temp bar -->
+      <div class="temp-strip" id="temp-strip">
+        <div class="temp-strip-top">
+          <span class="temp-strip-label">Lead temperature</span>
+          <span class="temp-strip-value" id="temp-strip-value">Warm</span>
+        </div>
+        <div class="temp-bar-track"><div class="temp-bar-fill" id="temp-bar-fill" style="width:50%"></div></div>
+      </div>
+
+      <!-- AI suggestion — inline, large -->
+      <div class="ai-inline" id="ai-inline">
+        <div class="ai-inline-header">
+          <span class="ai-inline-badge">✦ AI suggestion</span>
+          <button class="ai-dismiss-btn" onclick="dismissSuggestion()">×</button>
+        </div>
+        <div class="ai-inline-body">
+          <div class="ai-inline-text" id="ai-inline-text"></div>
+        </div>
+      </div>
+
+      <!-- Business background (simplified) -->
+      <div class="info-card">
+        <div class="info-title">Business background</div>
+        <div id="c-bg-rows"></div>
+      </div>
+
+      <!-- Notes -->
+      <div class="info-card">
+        <div class="info-title">Background notes</div>
+        <div class="bg-note" id="c-bg-text"></div>
+      </div>
+
+      <!-- Talking points -->
+      <div class="info-card">
+        <div class="info-title">Talking points</div>
+        <div id="c-talking-points"></div>
+      </div>
+
+      <!-- Anticipated objections (bottom) -->
+      <div class="info-card">
+        <div class="info-title">Anticipated objections</div>
+        <div id="c-objections"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── AE: DEMO PREP ── -->
+  <div class="ae-only" style="height:100%">
+    <div class="demo-prep-layout">
+      <div class="demo-prep-main">
+
+        <div class="queue-progress">
+          <span style="font-size:12px;color:var(--text3)">Demo</span>
+          <span style="font-size:14px;font-weight:700;color:var(--text)" id="ae-pos">1 of 3</span>
+          <div class="q-dots" id="ae-dots"></div>
+          <div class="q-nav">
+            <button class="btn btn-ghost btn-sm" id="ae-btn-prev" onclick="prevDemo()">← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="ae-btn-next" onclick="nextDemo()">Next →</button>
+          </div>
+        </div>
+
+        <div class="demo-hero">
+          <div class="dh-time" id="d-time">10:00 AM — Today</div>
+          <div class="dh-account" id="d-account">Mesa Verde Plumbing</div>
+          <div class="dh-contact" id="d-contact">Chris Adams, Operations Manager · (801) 555-0733</div>
+          <div class="dh-focus" id="d-focus"></div>
+          <div class="prep-note">
+            <div class="prep-note-label">Prep note</div>
+            <div class="prep-note-text" id="d-prep-note"></div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-title">Account brief</div>
+          <div id="d-brief-rows"></div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-title">Key challenge</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.55;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--accent)" id="d-challenge"></div>
+        </div>
+
+        <div class="notes-area">
+          <div class="info-title" style="margin-bottom:8px">Demo notes</div>
+          <textarea placeholder="Add notes during the demo…"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-primary btn-sm">Save notes</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="demo-prep-sidebar">
+        <div class="info-title">Today's schedule</div>
+        <div id="ae-schedule"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Post-call modal -->
+<div class="modal-backdrop" id="post-call-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">How did the call go?</div>
+        <div class="modal-sub" id="modal-contact-sub">Maria Santos · Rivera Dental Group</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-ai-box">
+        <div class="modal-ai-label">✦ AI summary</div>
+        <div class="modal-ai-text" id="modal-ai-text"></div>
+      </div>
+      <div>
+        <div class="modal-section-label">How well did it go? <span style="font-weight:400;color:var(--text3)">(1 = rough, 5 = great)</span></div>
+        <div class="rating-row" id="rating-row">
+          <button class="rating-btn" onclick="setRating(1)">1</button>
+          <button class="rating-btn" onclick="setRating(2)">2</button>
+          <button class="rating-btn" onclick="setRating(3)">3</button>
+          <button class="rating-btn" onclick="setRating(4)">4</button>
+          <button class="rating-btn" onclick="setRating(5)">5</button>
+        </div>
+      </div>
+      <div>
+        <div class="modal-section-label">Notes</div>
+        <textarea class="modal-notes" placeholder="Anything worth remembering — objections, next steps, vibe…"></textarea>
+      </div>
+      <div>
+        <div class="modal-section-label">Recommended follow-up</div>
+        <div class="modal-followup-box">
+          <div class="modal-followup-header">
+            <span class="modal-followup-label">✦ AI draft</span>
+            <span class="modal-followup-channel">✉ Email</span>
+          </div>
+          <textarea class="modal-followup-text" id="modal-followup-text"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Skip</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="saveAndClose()">Save notes only</button>
+        <button class="btn btn-primary btn-sm" onclick="sendAndClose()">Send follow-up →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="role-toggle" onclick="toggleRole()">
+  <span class="toggle-dot"></span>
+  <span id="toggle-label">Switch to AE View</span>
+</button>
+
+<script>
+const contacts = [
+  {
+    name:'Maria Santos', initials:'MS',
+    meta:'Practice Manager · Rivera Dental Group · 3 locations',
+    phone:'(801) 555-0142', lastContact:'No prior contact',
+    signalType:'high',
+    tags:['Multi-location','High intent','Reviews focus'],
+    bgRows:[
+      ['Locations','3 (Provo / Orem / Springville)'],
+      ['Monthly patients','~850 across all locations'],
+      ['Google reviews','41 reviews · 4.1★'],
+      ['Current tools','None — manual request cards only'],
+      ['Budget cycle','Q3 — decision before Sep 30'],
+    ],
+    bgText:"Three-location dental group in the Provo/Orem metro. Maria handles all vendor decisions — Dr. Rivera is hands-off on ops. Review count is below market because they rely on in-office cards with no follow-up. She's also looked at Birdeye but hasn't committed.",
+    talkingPoints:[
+      'Three locations → three review profiles. Podium consolidates into one dashboard.',
+      '4.1★ is below the 4.6★ market average — velocity is the fix, not asking louder.',
+      'Setup under 30 min. Front desk doesn\'t need training — it works through the patient SMS flow.',
+      'HIPAA-compliant by default. No BAA risk.',
+    ],
+    objections:[
+      {q:'We already ask for reviews in the office',a:'In-office requests get ~15% follow-through. Automated SMS within 1 hour of a visit gets 40–60%. The difference is timing.'},
+      {q:'What does it cost?',a:'For a 3-location group, typically $700–900/mo all-in. Reviews compound forever — it\'s not a recurring expense, it\'s a compounding asset.'},
+      {q:"We're also looking at Birdeye",a:"Ask Maria what she specifically saw in their demo. You can address the gaps directly instead of defending blindly."},
+      {q:'We need to talk to the doctor first',a:'Most multi-location deals are approved by the practice manager and ratified by the owner. Want me to put together a 1-page summary for Dr. Rivera?'},
+    ],
+    aiSuggestions:[
+      "She's a practice manager, not the owner — don't assume budget authority. Ask: 'Is this the kind of decision you make on your own, or does Dr. Rivera weigh in?'",
+      "Three locations is your anchor. Say: 'Most dental groups tell us the real unlock is seeing all three review profiles in one place — want me to show you that view?'",
+      "If she mentions Birdeye, ask what she specifically saw in their demo. Address the gaps directly instead of defending.",
+      "She's still on after 2 minutes — that's a buying signal. Ask one open question: 'What does your current review process look like on a busy day?'",
+    ],
+    aiCallSummary:"Maria engaged well on the multi-location angle and asked follow-up questions about the dashboard. She mentioned needing to loop in Dr. Rivera before moving forward — flag this as a two-step close. No hard objections surfaced.",
+    followupMsg:"Hi Maria,\n\nGreat speaking with you today. As promised, I'm attaching a quick overview of how Rivera Dental Group could be set up across all three locations — including what the consolidated review dashboard looks like.\n\nWould Thursday work for a 20-minute walkthrough with you and Dr. Rivera?\n\nBest,\nJames",
+  },
+  {
+    name:'Jennifer Walsh', initials:'JW',
+    meta:'General Manager · Walsh Home Services · 2 locations',
+    phone:'(801) 555-0371', lastContact:'2-way text exchange 3 days ago',
+    signalType:'high',
+    tags:['Late funnel','Competitor eval','After-hours need'],
+    bgRows:[
+      ['Locations','2 (Salt Lake City + Provo)'],
+      ['Avg. monthly jobs','~420'],
+      ['Google reviews','63 reviews · 4.3★'],
+      ['Pain point','~30% of after-hours calls go unanswered'],
+      ['Competitor mentioned','Birdeye (seen in chat transcript)'],
+    ],
+    bgText:"Two-location home services company. Jennifer manages all vendor relationships. After-hours call volume is her primary pain — leads after 6 PM go to voicemail and are lost to competitors. She asked a comparison question in webchat 3 days ago, suggesting she's actively evaluating.",
+    talkingPoints:[
+      'Webchat with after-hours auto-reply captures after-6pm leads instantly — no dispatcher needed overnight.',
+      'For a 2-location home services company, the biggest win is review velocity per tech.',
+      'Integration with ServiceTitan and Housecall Pro is native — zero setup friction.',
+      "Competitor comparison question = she's 60–70% decided. Answer her question, don't pitch.",
+    ],
+    objections:[
+      {q:'How does it compare to Birdeye?',a:"Birdeye is strong for enterprise. For a 2-location home services company, most customers say Podium is simpler for techs to actually use — adoption rate drives ROI."},
+      {q:"Our techs won't use it",a:'1-tap text flow right after job close — takes 4 seconds. Average tech adoption in home services is 78% within 30 days.'},
+      {q:'We already use an answering service',a:"Answering services log a message. Webchat auto-reply can answer FAQs, collect job info, and push to booking in real time."},
+    ],
+    aiSuggestions:[
+      "She asked a competitor comparison question — open with: 'What specifically were you trying to understand?' Don't pitch until you know.",
+      "After-hours is her pain. Quantify it: 'Missing even 5 jobs a month at $400 average ticket is $2k/month sitting on the table.'",
+      "She's a GM — ask: 'Who on your team would actually run this day to day — you or someone on the dispatch team?'",
+      "If she's still engaged at 2 minutes, she's a buyer. Move to scheduling: 'Do you have 20 minutes later this week to see the after-hours flow?'",
+    ],
+    aiCallSummary:"Jennifer confirmed after-hours lead loss is a live pain point — she mentioned losing jobs to a competitor who responds instantly. She asked about Birdeye but didn't seem committed. Good candidate for a webchat demo focused on the after-hours auto-reply flow.",
+    followupMsg:"Hi Jennifer,\n\nThanks for the conversation today. I know after-hours response time is your biggest gap, so I wanted to share a quick clip showing exactly how our webchat auto-reply captures leads after 6 PM — no dispatcher needed.\n\nI can set up a 20-minute demo this week around your schedule. Would Wednesday or Thursday work?\n\nBest,\nJames",
+  },
+  {
+    name:'Rachel Kim', initials:'RK',
+    meta:'Office Manager · Summit Orthodontics · 2 locations',
+    phone:'(801) 555-0604', lastContact:'Trial started 8 days ago',
+    signalType:'trial',
+    tags:['Trial risk','0% activated','Needs a win'],
+    bgRows:[
+      ['Locations','2 (Lehi + American Fork)'],
+      ['Trial started','8 days ago'],
+      ['Modules activated','0 of 3'],
+      ['Reviews sent via Podium','0'],
+      ['Google reviews','29 reviews · 4.4★'],
+    ],
+    bgText:"Rachel started the trial on her own initiative but setup felt like homework. Dr. Lee approved the eval but isn't daily involved. She needs one review collected to justify the spend. This is a support call — not a sales call.",
+    talkingPoints:[
+      'Goal: one review collected before we hang up. Frame everything around that.',
+      'The review module takes under 5 minutes to activate — walk her through it live.',
+      'Dr. Lee approved this but isn\'t watching. Rachel needs a quick win to report up.',
+      "If she's overwhelmed: 'That's the most common feedback. Let me just do the first step with you right now.'",
+    ],
+    objections:[
+      {q:"I haven't had time to set it up",a:"That's exactly why I'm calling. 5 minutes. If you're at your computer, I'll walk you through it right now."},
+      {q:'It seems complicated',a:"There are really only 3 things to do. The first one — connecting your patient list — does the heavy lifting. Everything else is optional."},
+      {q:"We're not sure it's the right fit",a:"The fastest way to know is to collect one review and see the response rate. First-week review rates for ortho practices average 38%."},
+    ],
+    aiSuggestions:[
+      "This is a support call, not a sales call. Open with: 'I'm not calling to sell anything — I just want to help you get your first review collected.'",
+      "If she sounds hesitant, offer to walk through it step by step. The biggest blocker is the first 5 minutes.",
+      "Ask who else is in the office. Sometimes the fastest path is walking a front-desk staff member through it instead.",
+      "If she can't talk: 'I can send you a 90-second video walkthrough — takes less time than reading an email.'",
+    ],
+    aiCallSummary:"Rachel confirmed she hasn't had bandwidth to set up the trial — typical early-stage churn risk. She was receptive to a guided walkthrough. Outcome to track: whether she actually activates the review module and sends her first request this week.",
+    followupMsg:"Hi Rachel,\n\nReally appreciate you taking a few minutes today. As promised, here's the setup link — Step 1 is connecting your patient list, which is the only step that matters in week one:\n\n[Setup guide link]\n\nIf you run into anything, reply to this email and I'll jump on a quick call. Dr. Lee is going to love seeing that first review come in.\n\nBest,\nJames",
+  },
+  {
+    name:'David Park', initials:'DP',
+    meta:'Owner & Dentist · Park Family Dentistry · 1 location',
+    phone:'(385) 555-0489', lastContact:'No prior contact — warm referral',
+    signalType:'warm',
+    tags:['Warm referral','Owner','Sole decision-maker'],
+    bgRows:[
+      ['Location','Draper, UT'],
+      ['Monthly patients','~290'],
+      ['Google reviews','17 reviews · 4.2★'],
+      ['Decision-maker','Dr. Park (owner — decides alone)'],
+      ['Referral source','Dr. Kim · Clearfield Dental (4.9★ · 312 reviews)'],
+    ],
+    bgText:"Dr. Park handles all vendor decisions personally — no office manager layer to navigate. Dr. Kim at Clearfield mentioned Park has been asking about their review system. Clearfield went from 31 → 312 reviews in 14 months. That's your proof point. Lead with it.",
+    talkingPoints:[
+      "Name-drop Dr. Kim immediately — that's the reason for the call and the fastest way to establish credibility.",
+      'Clearfield: 31 → 312 reviews, 4.1 → 4.9★ in 14 months. That\'s the story.',
+      'Owner = sole decision-maker. If there\'s buy-in, close a demo date on this call.',
+      'His 17 reviews vs. Draper market average of 80+ is a visible gap — offer to show the competitor map.',
+    ],
+    objections:[
+      {q:"I'm not sure I need this",a:"Dr. Kim had 31 reviews when he started. He now has 312 and a 4.9★ rating. Would it be worth 20 minutes to see if the same is possible here?"},
+      {q:'What does it cost?',a:'For a single-location practice, typically $350–500/mo. Most customers see positive ROI within 90 days.'},
+      {q:"I'm too busy to set something like this up",a:"Dr. Kim said the same thing. Setup was under an hour and the front desk runs it from there. You don't touch it after setup."},
+    ],
+    aiSuggestions:[
+      "Open with the referral immediately: 'Dr. Kim at Clearfield suggested I reach out — he mentioned you'd been asking about their review system.' Then stop talking.",
+      "He's a solo decision-maker. If interest is there, push for a specific date: 'I could walk you through it Wednesday at noon — would that work?'",
+      "Offer to pull the competitor map: 'Can I show you what your review count looks like vs. the top 5 practices in Draper?'",
+      "If he mentions price, anchor against Clearfield: 'Dr. Kim pays about $450/month. His new patient growth from reviews has been worth much more than that.'",
+    ],
+    aiCallSummary:"Dr. Park was immediately warmed up by the Dr. Kim referral — strong credibility anchor. He asked about the competitor review map and seemed interested in the setup timeline. No strong objections. Solo decision-maker: push to close a demo date on the next touchpoint.",
+    followupMsg:"Hi Dr. Park,\n\nGreat speaking with you today. I pulled the review map for Draper — your 17 reviews vs. the top 5 practices in the area (avg. 94 reviews) tells the whole story. I've attached it below.\n\nDr. Kim went from 31 → 312 reviews in 14 months. Setup was under an hour.\n\nI'd love to show you the same thing working for Park Family Dentistry. Do you have 20 minutes Wednesday at noon?\n\nBest,\nJames",
+  },
+  {
+    name:'Carlos Torres', initials:'CT',
+    meta:'Owner · Torres Auto Body & Collision · 1 location',
+    phone:'(385) 555-0218', lastContact:'Churned 5 months ago',
+    signalType:'warm',
+    tags:['Win-back','Replied to SMS','Knows product'],
+    bgRows:[
+      ['Location','West Valley City'],
+      ['Previous plan','Reviews only · $240/mo'],
+      ['Left because','Price — reviews-only wasn\'t worth it'],
+      ['Churned','5 months ago'],
+      ["What's changed",'Texting + webchat now bundled in starter plan'],
+    ],
+    bgText:"Carlos knows Podium and left over price. Since he churned, texting and webchat are now bundled in the base tier — so the same price covers much more. He replied 'maybe, call me' to a re-engagement SMS. Be direct: acknowledge he left, say what's changed, give him a number.",
+    talkingPoints:[
+      "Acknowledge he left and why: 'You left because reviews-only wasn't worth $240. That's fair.'",
+      "What's changed: texting and webchat now bundled. 3× more for the same price.",
+      '10–15% win-back discount may be available — confirm with manager before committing.',
+      "He knows the product — skip the pitch. 5-minute call: what changed, what it costs, yes or no.",
+    ],
+    objections:[
+      {q:'I left because it was too expensive',a:"I'm not going to pretend otherwise. Since you left, we've added texting and webchat to the base plan. Same price, significantly more value."},
+      {q:'I found something cheaper',a:"What are you using now? I'd rather know what I'm comparing against than guess. If it's working for you, I won't waste your time."},
+      {q:"I don't want to start over",a:"You're not starting from zero — your account history is still here. Setup would take about 20 minutes."},
+    ],
+    aiSuggestions:[
+      "He said 'maybe, call me' — low-grade interest. Open direct: 'You replied to our text yesterday — I wanted to have an honest conversation about what's changed since you left.'",
+      "He left over price. Don't defend the old price. Agree and move forward: 'You were right — reviews-only for $240 wasn't a great deal. Here's what's different now.'",
+      "Keep it short. If you're past 3 minutes and he hasn't pushed back: 'Does this make sense at face value or is there a specific reason it won't work?'",
+      "If he mentions a competitor, ask what he's paying and what he's getting. Compete on ROI, not features.",
+    ],
+    aiCallSummary:"Carlos was direct and appreciated the no-nonsense tone. He acknowledged the new bundle changes the value equation. He's using a cheaper tool but seemed frustrated with it. Win-back probability is moderate — a pricing concession or 10% loyalty discount could close it.",
+    followupMsg:"Hey Carlos,\n\nShort and simple: since you left, we added texting and webchat to the base plan. Same $240, three times the value.\n\nIf you want to try it again, I can apply a 10% loyalty discount for the first 6 months — just reply and I'll make it happen. No pitch, no demo required.\n\nJames",
+  },
+];
+
+const demos = [
+  {
+    time:'10:00 AM — Today', account:'Mesa Verde Plumbing', contact:'Chris Adams, Operations Manager',
+    phone:'(801) 555-0733', focus:['Webchat + after-hours reply','Review management','Payments via text'],
+    prepNote:"Chris specifically asked about ServiceTitan integration — it's confirmed compatible. Mention this early to remove a known objection.",
+    briefRows:[['Business type','Plumbing / HVAC'],['Locations','2'],['Staff','45'],['Current solution','Google Business only'],['Pain point','Losing ~30% of after-hours inbound']],
+    challenge:'After-hours call volume — leads that call after 6 PM go unanswered. Chris estimates 30% of inbound leads are lost overnight.',
+  },
+  {
+    time:'1:30 PM — Today', account:'Greenfield Family Dental', contact:'Dr. Patricia Ngo, Owner',
+    phone:'(385) 555-0812', focus:['Ease of setup','Automated review requests','Front-desk texting'],
+    prepNote:'She churned from Birdeye citing complexity. Lead with simplicity and time-to-value. She is the sole decision-maker.',
+    briefRows:[['Business type','Dental practice'],['Locations','1'],['Staff','9'],['Previous solution','Birdeye (churned)'],['Leave reason','Too complex']],
+    challenge:'Previous platform too complex for front-desk staff. Needs something staff can use in 5 minutes with no training.',
+  },
+  {
+    time:'3:30 PM — Today', account:'Sunrise Auto Group', contact:'Mark Henley, General Manager',
+    phone:'(801) 555-0947', focus:['Review volume growth','Multi-location dashboard','DealerSocket integration'],
+    prepNote:'Largest deal today. Mark has been shopping — pricing will come up early. Anchor at team rate. Confirm DealerSocket integration status with Solutions Engineering before the call.',
+    briefRows:[['Business type','Auto dealership'],['Locations','3'],['Staff','87'],['Current solution','DealerSocket + manual reviews'],['Pain point','Review count vs. competitors']],
+    challenge:'Review count and rating significantly below local competitors. Lost two deals last quarter to competitors with 4.8+ Google ratings.',
+  },
+];
+
+let sdrIdx=0, aeIdx=0;
+let callActive=false, callSeconds=0, callTimerInterval=null;
+let tempPct=50, suggestionIdx=0, suggestionTimeout=null;
+const TEMP_STARTS={high:68,warm:45,trial:28};
+
+function tempColor(p){
+  if(p<40) return {bg:'rgba(100,116,139,0.12)',border:'rgba(100,116,139,0.2)',text:'#64748B',bar:'#94A3B8',label:'Cold'};
+  if(p<70) return {bg:'rgba(217,119,6,0.10)',border:'rgba(217,119,6,0.2)',text:'#D97706',bar:'#D97706',label:'Warm'};
+  if(p<88) return {bg:'rgba(5,150,105,0.10)',border:'rgba(5,150,105,0.2)',text:'#059669',bar:'#059669',label:'Hot'};
+  return {bg:'rgba(5,150,105,0.15)',border:'rgba(5,150,105,0.3)',text:'#059669',bar:'#059669',label:'🔥 Very Hot'};
+}
+
+function updateTemp(){
+  const tc=tempColor(tempPct);
+  const badge=document.getElementById('temp-badge');
+  badge.textContent=tc.label; badge.style.background=tc.bg; badge.style.color=tc.text;
+  document.getElementById('temp-bar-fill').style.width=tempPct+'%';
+  document.getElementById('temp-bar-fill').style.background=tc.bar;
+  document.getElementById('temp-strip-value').textContent=tc.label;
+  document.getElementById('temp-strip-value').style.color=tc.text;
+  const s=document.getElementById('temp-strip');
+  s.style.background=tc.bg; s.style.borderColor=tc.border;
+}
+
+function fmt(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}
+
+function tick(){
+  callSeconds++;
+  document.getElementById('call-timer').textContent=fmt(callSeconds);
+  if(callSeconds%18===0&&tempPct<92){
+    tempPct=Math.min(92,tempPct+Math.floor(Math.random()*8+4));
+    updateTemp();
+  }
+}
+
+function showSuggestion(text, isUpdate){
+  const card=document.getElementById('ai-inline');
+  const textEl=document.getElementById('ai-inline-text');
+  if(isUpdate && card.classList.contains('on')){
+    // fade out, swap, fade in
+    card.classList.remove('ai-fade-in');
+    card.classList.add('ai-fade-out');
+    setTimeout(()=>{
+      textEl.textContent=text;
+      card.classList.remove('ai-fade-out');
+      card.classList.add('ai-fade-in');
+    },190);
+  } else {
+    textEl.textContent=text;
+    card.classList.add('on');
+    card.classList.add('ai-fade-in');
+  }
+}
+
+function showNextSuggestion(){
+  const c=contacts[sdrIdx];
+  if(!callActive||suggestionIdx>=c.aiSuggestions.length) return;
+  const isUpdate=(suggestionIdx>0);
+  showSuggestion(c.aiSuggestions[suggestionIdx], isUpdate);
+  suggestionIdx++;
+  clearTimeout(suggestionTimeout);
+  suggestionTimeout=setTimeout(showNextSuggestion, 22000+Math.random()*10000);
+}
+
+function dismissSuggestion(){
+  const card=document.getElementById('ai-inline');
+  card.classList.remove('ai-fade-in');
+  card.classList.add('ai-fade-out');
+  setTimeout(()=>{
+    card.classList.remove('on','ai-fade-out');
+  },190);
+}
+
+function setTempLoading(){
+  const badge=document.getElementById('temp-badge');
+  badge.textContent='Analyzing…';
+  badge.style.background='rgba(100,116,139,0.10)';
+  badge.style.color='#94A3B8';
+  document.getElementById('temp-bar-fill').style.width='0%';
+  document.getElementById('temp-bar-fill').style.background='#CBD5E1';
+  document.getElementById('temp-strip-value').textContent='Analyzing…';
+  document.getElementById('temp-strip-value').style.color='#94A3B8';
+  const s=document.getElementById('temp-strip');
+  s.style.background=''; s.style.borderColor='';
+}
+
+function startCall(){
+  const c=contacts[sdrIdx];
+  callActive=true; callSeconds=0; suggestionIdx=0;
+  tempPct=TEMP_STARTS[c.signalType]||45;
+  document.getElementById('pre-call-block').style.display='none';
+  document.getElementById('call-active-bar').classList.add('on');
+  document.getElementById('temp-strip').classList.add('on');
+  document.getElementById('call-timer').textContent='0:00';
+  const card=document.getElementById('ai-inline');
+  card.classList.remove('on','ai-fade-in','ai-fade-out');
+  setTempLoading();
+  clearInterval(callTimerInterval);
+  callTimerInterval=setInterval(tick,1000);
+  clearTimeout(suggestionTimeout);
+  setTimeout(updateTemp, 3000+Math.random()*1000);
+  suggestionTimeout=setTimeout(showNextSuggestion, 10000);
+}
+
+function endCall(){
+  const wasActive=callActive;
+  callActive=false;
+  clearInterval(callTimerInterval);
+  clearTimeout(suggestionTimeout);
+  document.getElementById('call-active-bar').classList.remove('on');
+  document.getElementById('temp-strip').classList.remove('on');
+  const card=document.getElementById('ai-inline');
+  card.classList.remove('on','ai-fade-in','ai-fade-out');
+  document.getElementById('pre-call-block').style.display='flex';
+  if(wasActive) openModal();
+}
+
+function openModal(){
+  const c=contacts[sdrIdx];
+  const nameParts=c.meta.split('·');
+  const company=(nameParts[1]||'').trim();
+  document.getElementById('modal-contact-sub').textContent=c.name+(company?' · '+company:'');
+  document.getElementById('modal-ai-text').textContent=c.aiCallSummary||'Call complete. No summary available.';
+  document.getElementById('modal-followup-text').value=c.followupMsg||'';
+  document.querySelector('.modal-notes').value='';
+  document.querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('post-call-modal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('post-call-modal').classList.remove('open');
+}
+
+function setRating(n){
+  document.querySelectorAll('.rating-btn').forEach((b,i)=>{
+    b.classList.toggle('selected',i===n-1);
+  });
+}
+
+function saveAndClose(){
+  closeModal();
+}
+
+function sendAndClose(){
+  const btn=document.querySelector('.modal-footer .btn-primary');
+  const orig=btn.textContent;
+  btn.textContent='Sent ✓';
+  btn.disabled=true;
+  setTimeout(()=>{
+    btn.textContent=orig;
+    btn.disabled=false;
+    closeModal();
+  },1200);
+}
+
+function renderContact(){
+  endCall();
+  const c=contacts[sdrIdx];
+  document.getElementById('sdr-pos').textContent=(sdrIdx+1)+' of '+contacts.length;
+  document.getElementById('c-initials').textContent=c.initials;
+  document.getElementById('c-name').textContent=c.name;
+  document.getElementById('c-meta').textContent=c.meta;
+  document.getElementById('c-phone').textContent=c.phone;
+  document.getElementById('c-last-contact').textContent=c.lastContact;
+  document.getElementById('c-tags').innerHTML=c.tags.map(t=>`<span class="ch-tag">${t}</span>`).join('');
+  document.getElementById('c-bg-rows').innerHTML=c.bgRows.map(([k,v])=>`<div class="info-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  document.getElementById('c-bg-text').textContent=c.bgText;
+  document.getElementById('c-talking-points').innerHTML=c.talkingPoints.map(t=>`<div class="talking-point"><div class="tp-dot"></div><span>${t}</span></div>`).join('');
+  document.getElementById('c-objections').innerHTML=c.objections.map(o=>`<div class="objection-item"><div class="obj-q">"${o.q}"</div><div class="obj-a">→ ${o.a}</div></div>`).join('');
+  document.getElementById('q-dots').innerHTML=contacts.map((_,i)=>`<div class="q-dot ${i<sdrIdx?'done':i===sdrIdx?'current':''}"></div>`).join('');
+  document.getElementById('btn-prev').disabled=sdrIdx===0;
+  document.getElementById('btn-next').disabled=sdrIdx===contacts.length-1;
+}
+
+function prevContact(){if(sdrIdx>0){sdrIdx--;renderContact();}}
+function nextContact(){if(sdrIdx<contacts.length-1){sdrIdx++;renderContact();}}
+
+function renderDemo(){
+  const d=demos[aeIdx];
+  document.getElementById('ae-pos').textContent=(aeIdx+1)+' of '+demos.length;
+  document.getElementById('d-time').textContent=d.time;
+  document.getElementById('d-account').textContent=d.account;
+  document.getElementById('d-contact').textContent=d.contact+' · '+d.phone;
+  document.getElementById('d-prep-note').textContent=d.prepNote;
+  document.getElementById('d-challenge').textContent=d.challenge;
+  document.getElementById('d-focus').innerHTML=d.focus.map(f=>`<span>${f}</span>`).join('');
+  document.getElementById('d-brief-rows').innerHTML=d.briefRows.map(([k,v])=>`<div class="info-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  document.getElementById('ae-dots').innerHTML=demos.map((_,i)=>`<div class="q-dot ${i<aeIdx?'done':i===aeIdx?'current':''}"></div>`).join('');
+  document.getElementById('ae-btn-prev').disabled=aeIdx===0;
+  document.getElementById('ae-btn-next').disabled=aeIdx===demos.length-1;
+  document.getElementById('ae-schedule').innerHTML=demos.map((d2,i)=>`
+    <div style="padding:10px 12px;border-radius:8px;margin-bottom:8px;cursor:pointer;
+      background:${i===aeIdx?'var(--acc-d)':'var(--bg3)'};
+      border:1px solid ${i===aeIdx?'var(--acc-b)':'var(--border)'};"
+      onclick="aeIdx=${i};renderDemo()">
+      <div style="font-size:10px;font-weight:700;color:${i===aeIdx?'var(--accent)':'var(--text3)'};margin-bottom:2px">${d2.time}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text)">${d2.account}</div>
+      <div style="font-size:11px;color:var(--text3)">${d2.contact.split(',')[0]}</div>
+    </div>`).join('');
+}
+
+function prevDemo(){if(aeIdx>0){aeIdx--;renderDemo();}}
+function nextDemo(){if(aeIdx<demos.length-1){aeIdx++;renderDemo();}}
+
+const ROLE_KEY='gtm_role';
+function getRole(){return localStorage.getItem(ROLE_KEY)||'sdr';}
+function setRole(r){localStorage.setItem(ROLE_KEY,r);}
+function applyRole(r){
+  document.body.className='role-'+r;
+  document.getElementById('role-badge').textContent=r.toUpperCase();
+  document.getElementById('toggle-label').textContent=r==='sdr'?'Switch to AE View':'Switch to SDR View';
+  const ql=document.getElementById('queue-link');
+  if(ql) ql.textContent=r==='sdr'?'Call Queue':'Demo Prep';
+}
+function toggleRole(){const n=getRole()==='sdr'?'ae':'sdr';setRole(n);applyRole(n);}
+
+renderContact();
+renderDemo();
+applyRole(getRole());
+</script>
+</body>
+</html>

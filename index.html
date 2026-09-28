@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home · GTM Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── shared ── */
+:root{--bg:#F0F4F8;--bg2:#FFFFFF;--bg3:#F1F5F9;--bg4:#E2E8F0;--accent:#0BBFB3;--acc-d:rgba(11,191,179,0.10);--acc-b:rgba(11,191,179,0.30);--amber:#D97706;--amb-d:rgba(217,119,6,0.10);--coral:#E8664A;--cor-d:rgba(232,102,74,0.10);--green:#059669;--grn-d:rgba(5,150,105,0.10);--text:#0F172A;--text2:#475569;--text3:#94A3B8;--border:rgba(0,0,0,0.07);--nav-h:56px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+.topnav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:200}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.logo-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+.role-badge{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:var(--acc-d);color:var(--accent);padding:2px 7px;border-radius:99px;border:1px solid var(--acc-b)}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1}
+.nav-link{font-size:13px;font-weight:500;color:var(--text2);text-decoration:none;padding:5px 12px;border-radius:6px;transition:all 0.15s;white-space:nowrap}
+.nav-link:hover{color:var(--text);background:var(--bg3)}
+.nav-link.active{color:var(--accent);background:var(--acc-d)}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2);flex-shrink:0}
+.main{padding-top:var(--nav-h);min-height:100%;overflow-y:auto}
+.page{padding:24px 24px 80px;max-width:1160px;margin:0 auto}
+.role-toggle{position:fixed;bottom:20px;left:20px;z-index:300;display:flex;align-items:center;gap:8px;background:var(--text);border:1px solid transparent;color:rgba(255,255,255,0.8);font-size:12px;font-weight:600;font-family:inherit;padding:8px 16px;border-radius:99px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.18);transition:all 0.2s}
+.role-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.toggle-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+body.role-sdr .ae-only{display:none!important}
+body.role-ae  .sdr-only{display:none!important}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.pill-green{background:var(--grn-d);color:var(--green)}
+.pill-amber{background:var(--amb-d);color:var(--amber)}
+.pill-accent{background:var(--acc-d);color:var(--accent)}
+.pill-gray{background:rgba(100,116,139,0.15);color:var(--text3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;font-family:inherit;padding:7px 14px;border-radius:7px;cursor:pointer;border:none;transition:all 0.15s;text-decoration:none;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0D1B2A}
+.btn-primary:hover{background:#0dd9cc}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:5px}
+.sig{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.sig-high{background:var(--green)}
+.sig-warm{background:var(--amber)}
+.sig-trial{background:var(--accent)}
+.progress-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+
+/* ── wireframe disclaimer modal ── */
+.wf-backdrop{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(6px);z-index:900;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;transition:opacity 0.25s ease}
+.wf-backdrop.open{opacity:1}
+.wf-card{background:var(--bg2);border-radius:16px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,0.22);transform:scale(0.95) translateY(12px);transition:transform 0.3s cubic-bezier(.22,.68,0,1.15),opacity 0.25s ease;opacity:0;overflow:hidden}
+.wf-backdrop.open .wf-card{transform:scale(1) translateY(0);opacity:1}
+.wf-top{background:#0F172A;padding:20px 24px 18px}
+.wf-eyebrow{font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.wf-headline{font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.02em;line-height:1.25}
+.wf-body{padding:20px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.wf-para{font-size:13px;color:var(--text2);line-height:1.65}
+.wf-caveat{background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.22);border-radius:8px;padding:12px 14px}
+.wf-caveat-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:5px}
+.wf-caveat-text{font-size:12px;color:var(--text2);line-height:1.6}
+.wf-footer{display:flex;justify-content:flex-end;padding-top:4px}
+.wf-btn{background:var(--accent);color:#0D1B2A;font-size:13px;font-weight:700;font-family:inherit;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:background 0.15s}
+.wf-btn:hover{background:#0dd9cc}
+
+/* ── page-specific ── */
+.greeting{margin-bottom:20px}
+.greeting h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:4px}
+.greeting p{font-size:13px;color:var(--text2)}
+
+.away-section{margin-bottom:22px}
+.away-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.away-label::before{content:'✦';color:var(--accent);font-size:11px}
+.away-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.away-scroll::-webkit-scrollbar{display:none}
+.away-card{flex-shrink:0;width:220px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-decoration:none;cursor:pointer;transition:border-color 0.15s,background 0.15s;display:flex;flex-direction:column;gap:8px}
+.away-card:hover{border-color:var(--acc-b);background:rgba(11,191,179,0.04)}
+.away-card-contact{font-size:12px;font-weight:700;color:var(--text)}
+.away-card-action{font-size:11px;color:var(--text2);line-height:1.45}
+.away-card-time{font-size:10px;color:var(--text3)}
+.away-card-tag{align-self:flex-start;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px}
+
+.queue-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.contact-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;transition:border-color 0.15s;cursor:default}
+.contact-card:hover{border-color:rgba(11,191,179,0.25)}
+.contact-rank{font-size:11px;font-weight:700;color:var(--text3);width:18px;flex-shrink:0;margin-top:2px}
+.contact-avatar{width:34px;height:34px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0;border:1px solid var(--border)}
+.contact-body{flex:1;min-width:0}
+.contact-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px}
+.contact-company{font-weight:400;color:var(--text3)}
+.contact-meta{font-size:11px;color:var(--text3);margin-bottom:6px}
+.contact-signal{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:var(--text2);margin-bottom:6px;line-height:1.4}
+.contact-reason{font-size:10px;color:var(--text3);font-style:italic;line-height:1.35;padding:4px 7px;background:var(--bg3);border-radius:5px;border-left:2px solid var(--acc-b);margin-top:4px}
+.contact-deal-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 18px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);flex-shrink:0;text-align:center;min-width:100px}
+.deal-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:3px}
+.deal-value{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-0.03em;line-height:1}
+.deal-yr{font-size:11px;font-weight:400;color:var(--text3)}
+.contact-btns{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;flex-shrink:0}
+
+.capacity-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:24px;margin-bottom:24px}
+.cap-stat{text-align:center}
+.cap-num{font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.03em;line-height:1}
+.cap-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px}
+.cap-bar{flex:1}
+
+.demo-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start}
+.demo-time{font-size:13px;font-weight:700;color:var(--accent);width:70px;flex-shrink:0;padding-top:1px}
+.demo-body{flex:1;min-width:0}
+.demo-account{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
+.demo-meta{font-size:11px;color:var(--text3);margin-bottom:8px}
+.demo-focus{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.demo-focus span{font-size:10px;color:var(--text2);background:var(--bg3);padding:2px 8px;border-radius:99px}
+.demo-actions{display:flex;gap:8px}
+.demo-side{flex-shrink:0;text-align:right}
+.demo-deal{font-size:11px;color:var(--text3)}
+.demo-deal strong{font-size:14px;color:var(--text2);display:block}
+
+.followup-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.followup-info{}
+.followup-name{font-size:12px;font-weight:600;color:var(--text)}
+.followup-preview{font-size:11px;color:var(--text3);margin-top:2px}
+</style>
+</head>
+<body class="role-sdr">
+
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <span class="logo-dot"></span>
+    <span class="logo-name">GTM Engine</span>
+    <span class="role-badge" id="role-badge">SDR</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="index.html">Home</a>
+    <a class="nav-link" href="inbox.html">Inbox</a>
+    <a class="nav-link ae-only" href="calendar.html">Calendar</a>
+    <a class="nav-link" href="calling.html" id="queue-link">Call Queue</a>
+  </div>
+  <div class="nav-right">
+    <span style="font-size:11px;color:var(--text3)" id="date-str"></span>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page">
+
+    <!-- ── SDR VIEW ── -->
+    <div class="sdr-only">
+      <div class="greeting">
+        <h1 id="sdr-greeting">Good morning, James.</h1>
+      </div>
+
+      <!-- Capacity strip -->
+      <div class="capacity-card">
+        <div class="cap-stat">
+          <div class="cap-num">5</div>
+          <div class="cap-label">In queue</div>
+        </div>
+        <div class="cap-stat">
+          <div class="cap-num">3</div>
+          <div class="cap-label">Called today</div>
+        </div>
+        <div class="cap-stat">
+          <div class="cap-num">1</div>
+          <div class="cap-label">Connected</div>
+        </div>
+        <div class="cap-bar">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text3)">Daily target</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text2)">3 / 12 contacts reached</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div>
+        </div>
+        <a href="calling.html" class="btn btn-primary" style="flex-shrink:0">Continue calling →</a>
+      </div>
+
+      <!-- While you were away -->
+      <div class="away-section">
+        <div class="away-label">While you were away</div>
+        <div class="away-scroll">
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag pill-green" style="background:var(--grn-d);color:var(--green)">Follow-up sent</span>
+            <div class="away-card-contact">Torres Auto Body</div>
+            <div class="away-card-action">AI drafted and sent a follow-up for your unanswered call yesterday</div>
+            <div class="away-card-time">2 hrs ago</div>
+          </a>
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag pill-accent" style="background:var(--acc-d);color:var(--accent)">Score updated</span>
+            <div class="away-card-contact">Walsh Home Services</div>
+            <div class="away-card-action">Interest score upgraded to High — competitor comparison intent detected</div>
+            <div class="away-card-time">4 hrs ago</div>
+          </a>
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag pill-amber" style="background:var(--amb-d);color:var(--amber)">Flagged</span>
+            <div class="away-card-contact">Summit Orthodontics</div>
+            <div class="away-card-action">Trial day 8 — reviews module still inactive, 0 contacts texted</div>
+            <div class="away-card-time">This morning</div>
+          </a>
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag pill-green" style="background:var(--grn-d);color:var(--green)">Record created</span>
+            <div class="away-card-contact">Park Family Dentistry</div>
+            <div class="away-card-action">New contact created from referral by Dr. Kim at Clearfield Dental</div>
+            <div class="away-card-time">Yesterday</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Priority queue -->
+      <div class="queue-header">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3)">Priority queue</div>
+        <a href="calling.html" class="btn btn-primary btn-sm">Start calling →</a>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+
+        <div class="contact-card">
+          <div class="contact-rank">#1</div>
+          <div class="contact-body">
+            <div class="contact-name">Maria Santos <span class="contact-company">| Rivera Dental Group</span></div>
+            <div class="contact-meta">Practice Manager · 3 locations</div>
+            <div class="contact-signal">
+              <span class="sig sig-high"></span>
+              Visited pricing page twice in 5 days — active evaluation signal
+            </div>
+            <div class="contact-reason">"First to reach them while intent is peak. Multi-location practice = strong Podium fit."</div>
+          </div>
+          <div class="contact-deal-card">
+            <div class="deal-label">Est. deal</div>
+            <div class="deal-value">$8,400<span class="deal-yr">/yr</span></div>
+          </div>
+          <div class="contact-btns">
+            <a href="calling.html" class="btn btn-primary btn-sm">Call</a>
+            <button class="btn btn-ghost btn-sm">Text</button>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-rank">#2</div>
+          <div class="contact-body">
+            <div class="contact-name">Jennifer Walsh <span class="contact-company">| Walsh Home Services</span></div>
+            <div class="contact-meta">General Manager · 2 locations</div>
+            <div class="contact-signal">
+              <span class="sig sig-high"></span>
+              Asked competitor comparison question in chat 3 days ago
+            </div>
+            <div class="contact-reason">"Competitor comparison = late funnel. Call before a competitor does."</div>
+          </div>
+          <div class="contact-deal-card">
+            <div class="deal-label">Est. deal</div>
+            <div class="deal-value">$6,200<span class="deal-yr">/yr</span></div>
+          </div>
+          <div class="contact-btns">
+            <a href="calling.html" class="btn btn-primary btn-sm">Call</a>
+            <button class="btn btn-ghost btn-sm">Text</button>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-rank">#3</div>
+          <div class="contact-body">
+            <div class="contact-name">Rachel Kim <span class="contact-company">| Summit Orthodontics</span></div>
+            <div class="contact-meta">Office Manager · 2 locations</div>
+            <div class="contact-signal">
+              <span class="sig sig-trial"></span>
+              Trial day 8 — reviews module not activated, 0 contacts texted
+            </div>
+            <div class="contact-reason">"Trial ghost risk. Goal: get one review collected today — not sell harder."</div>
+          </div>
+          <div class="contact-deal-card">
+            <div class="deal-label">Est. deal</div>
+            <div class="deal-value">$5,800<span class="deal-yr">/yr</span></div>
+          </div>
+          <div class="contact-btns">
+            <a href="calling.html" class="btn btn-primary btn-sm">Call</a>
+            <button class="btn btn-ghost btn-sm">Text</button>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-rank">#4</div>
+          <div class="contact-body">
+            <div class="contact-name">David Park <span class="contact-company">| Park Family Dentistry</span></div>
+            <div class="contact-meta">Owner & Dentist · 1 location</div>
+            <div class="contact-signal">
+              <span class="sig sig-warm"></span>
+              Referred by Clearfield Dental — no prior contact
+            </div>
+            <div class="contact-reason">"Warm referral from Dr. Kim at Clearfield. Name-drop early. Owner is the decision-maker."</div>
+          </div>
+          <div class="contact-deal-card">
+            <div class="deal-label">Est. deal</div>
+            <div class="deal-value">$4,200<span class="deal-yr">/yr</span></div>
+          </div>
+          <div class="contact-btns">
+            <a href="calling.html" class="btn btn-primary btn-sm">Call</a>
+            <button class="btn btn-ghost btn-sm">Text</button>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-rank">#5</div>
+          <div class="contact-body">
+            <div class="contact-name">Carlos Torres <span class="contact-company">| Torres Auto Body & Collision</span></div>
+            <div class="contact-meta">Owner · 1 location</div>
+            <div class="contact-signal">
+              <span class="sig sig-warm"></span>
+              Replied to re-engagement SMS yesterday — churned 5 months ago
+            </div>
+            <div class="contact-reason">"Win-back. Replied with 'maybe, call me.' Short cycle — he knows the product."</div>
+          </div>
+          <div class="contact-deal-card">
+            <div class="deal-label">Est. deal</div>
+            <div class="deal-value">$3,600<span class="deal-yr">/yr</span></div>
+          </div>
+          <div class="contact-btns">
+            <a href="calling.html" class="btn btn-primary btn-sm">Call</a>
+            <button class="btn btn-ghost btn-sm">Text</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sdr-only -->
+
+    <!-- ── AE VIEW ── -->
+    <div class="ae-only">
+      <div class="greeting">
+        <h1>Good morning, James.</h1>
+      </div>
+
+      <!-- While you were away -->
+      <div class="away-section">
+        <div class="away-label">While you were away</div>
+        <div class="away-scroll">
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag" style="background:var(--acc-d);color:var(--accent);font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px">Brief updated</span>
+            <div class="away-card-contact">Mesa Verde Plumbing</div>
+            <div class="away-card-action">ServiceTitan integration confirmed — demo brief updated automatically</div>
+            <div class="away-card-time">1 hr ago</div>
+          </a>
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag" style="background:var(--grn-d);color:var(--green);font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px">Email opened</span>
+            <div class="away-card-contact">Greenfield Family Dental</div>
+            <div class="away-card-action">Dr. Ngo opened your follow-up email — no reply yet</div>
+            <div class="away-card-time">3 hrs ago</div>
+          </a>
+          <a href="inbox.html" class="away-card">
+            <span class="away-card-tag" style="background:var(--amb-d);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px">Account updated</span>
+            <div class="away-card-contact">Sunrise Auto Group</div>
+            <div class="away-card-action">2 additional decision-makers added to the account record</div>
+            <div class="away-card-time">This morning</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Today's demos -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Today's demos</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+
+        <div class="demo-card">
+          <div class="demo-time">10:00 AM</div>
+          <div class="demo-body">
+            <div class="demo-account">Mesa Verde Plumbing</div>
+            <div class="demo-meta">Chris Adams, Operations Manager · 2 locations · 45 staff</div>
+            <div class="demo-focus">
+              <span>Webchat + after-hours</span>
+              <span>Multi-location reviews</span>
+              <span>Payments via text</span>
+            </div>
+            <div style="font-size:11px;color:var(--amber);background:var(--amb-d);padding:6px 10px;border-radius:5px;border-left:2px solid var(--amber)">
+              Prep note: Chris asked about ServiceTitan integration — confirmed compatible, mention early.
+            </div>
+          </div>
+          <div class="demo-side">
+            <div class="demo-deal"><span>Deal value</span><strong>$9,600/yr</strong></div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+              <a href="calling.html" class="btn btn-primary btn-sm">View brief</a>
+              <button class="btn btn-ghost btn-sm">Join call</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-card">
+          <div class="demo-time">1:30 PM</div>
+          <div class="demo-body">
+            <div class="demo-account">Greenfield Family Dental</div>
+            <div class="demo-meta">Dr. Patricia Ngo, Owner · 1 location · 9 staff</div>
+            <div class="demo-focus">
+              <span>Simplicity & onboarding time</span>
+              <span>Automated review requests</span>
+              <span>Front-desk texting</span>
+            </div>
+            <div style="font-size:11px;color:var(--acc-d);background:var(--acc-d);padding:6px 10px;border-radius:5px;border-left:2px solid var(--accent);color:var(--text2)">
+              Churned from Birdeye — lead with simplicity and time-to-value. Avoid technical terms.
+            </div>
+          </div>
+          <div class="demo-side">
+            <div class="demo-deal"><span>Deal value</span><strong>$3,600/yr</strong></div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+              <a href="calling.html" class="btn btn-primary btn-sm">View brief</a>
+              <button class="btn btn-ghost btn-sm">Join call</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-card" style="border-color:rgba(11,191,179,0.2);background:rgba(11,191,179,0.03)">
+          <div class="demo-time" style="color:var(--amber)">3:30 PM</div>
+          <div class="demo-body">
+            <div class="demo-account">Sunrise Auto Group</div>
+            <div class="demo-meta">Mark Henley, General Manager · 3 locations · 87 staff</div>
+            <div class="demo-focus">
+              <span>Review volume growth</span>
+              <span>Multi-location dashboard</span>
+              <span>DealerSocket integration</span>
+            </div>
+            <div style="font-size:11px;padding:6px 10px;border-radius:5px;border-left:2px solid var(--amber);color:var(--amber);background:var(--amb-d)">
+              Largest deal today. Pricing anchor at team rate. Confirm DealerSocket status with Solutions Eng before call.
+            </div>
+          </div>
+          <div class="demo-side">
+            <div class="demo-deal"><span>Deal value</span><strong>$18,000/yr</strong></div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+              <a href="calling.html" class="btn btn-primary btn-sm">View brief</a>
+              <button class="btn btn-ghost btn-sm">Join call</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending follow-ups -->
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Pending follow-ups from yesterday</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="followup-item">
+          <div class="followup-info">
+            <div class="followup-name">Harbor View Dental — post-demo summary</div>
+            <div class="followup-preview">Draft ready · AI wrote from your call notes — review before sending</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm">Review draft</button>
+            <button class="btn btn-primary btn-sm">Send</button>
+          </div>
+        </div>
+        <div class="followup-item">
+          <div class="followup-info">
+            <div class="followup-name">Peak Performance Gym — proposal follow-up</div>
+            <div class="followup-preview">Sent 2 days ago · opened, not replied · nudge?</div>
+          </div>
+          <button class="btn btn-ghost btn-sm">Draft nudge</button>
+        </div>
+      </div>
+    </div><!-- /ae-only -->
+
+  </div>
+</div>
+
+<!-- Wireframe disclaimer -->
+<div class="wf-backdrop" id="wf-backdrop">
+  <div class="wf-card">
+    <div class="wf-top">
+      <div class="wf-eyebrow">Heads up</div>
+      <div class="wf-headline">This is a rough wireframe,<br>not a finished product.</div>
+    </div>
+    <div class="wf-body">
+      <p class="wf-para">This mock was built in a handful of prompts in under a couple of hours — as a way to quickly explore what a GTM Engine product could look like and feel like in practice.</p>
+      <div class="wf-caveat">
+        <div class="wf-caveat-label">⚠ Important caveat</div>
+        <div class="wf-caveat-text">This is not a polished wireframe, let alone a final design. Layouts are approximate, interactions are mostly fake, data is all placeholder, and nothing here represents a shipping commitment. Treat it as a conversation starter, not a spec.</div>
+      </div>
+      <div class="wf-footer">
+        <button class="wf-btn" onclick="closeDisclaimer()">Got it, let me look around →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="role-toggle" id="role-toggle" onclick="toggleRole()">
+  <span class="toggle-dot"></span>
+  <span id="toggle-label">Switch to AE View</span>
+</button>
+
+<script>
+const ROLE_KEY = 'gtm_role';
+const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const now = new Date();
+document.getElementById('date-str').textContent = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+const h = now.getHours();
+const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+const el = document.getElementById('sdr-greeting');
+if (el) el.textContent = greet + ', James.';
+
+function getRole(){ return localStorage.getItem(ROLE_KEY) || 'sdr'; }
+function setRole(r){ localStorage.setItem(ROLE_KEY, r); }
+function applyRole(r){
+  document.body.className = 'role-' + r;
+  document.getElementById('role-badge').textContent = r.toUpperCase();
+  document.getElementById('toggle-label').textContent = r === 'sdr' ? 'Switch to AE View' : 'Switch to SDR View';
+  const ql = document.getElementById('queue-link');
+  if(ql) ql.textContent = r === 'sdr' ? 'Call Queue' : 'Demo Prep';
+}
+function toggleRole(){
+  const next = getRole() === 'sdr' ? 'ae' : 'sdr';
+  setRole(next); applyRole(next);
+}
+applyRole(getRole());
+
+// Wireframe disclaimer — show every time index loads
+function closeDisclaimer(){
+  const bd=document.getElementById('wf-backdrop');
+  bd.style.opacity='0';
+  bd.style.pointerEvents='none';
+}
+setTimeout(()=>{ document.getElementById('wf-backdrop').classList.add('open'); }, 80);
+</script>
+</body>
+</html>
